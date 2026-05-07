@@ -1,0 +1,10 @@
+[project]
+name = "data-studio-permissions"
+version = "0.1.0"
+description = "Bulk Data Studio permission management via the Data Studio REST API"
+requires-python = ">=3.10"
+dependencies = [
+    "google-auth-httplib2>=0.4.0",
+    "google-auth-oauthlib>=1.4.0",
+    "requests>=2.33.1",
+]
