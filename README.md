@@ -1,10 +1,134 @@
-Bulk Data Studio permission updater.
+# Data Studio permission updater
 
-Setup:
-  uv sync          # install dependencies  
-  
-  uv run permissions.py                          # print current permissions  (default)  
-  uv run permissions.py --add-member EMAIL       # add the given member as VIEWER (use --role EDITOR to override)  
-  uv run permissions.py --revoke-member EMAIL    # revoke all permissions for the given member   
-  uv run permissions.py --check-missing          # print only reports missing given member or part of member email  
-  uv run permissions.py --all-reports            # run against the full reports list (default is the test report only)  
+A small Python CLI for bulk-managing sharing permissions on Looker Studio (Data Studio) reports via the [Data Studio REST API](https://developers.google.com/looker-studio/integrate/api/reference). The Data Studio UI has no bulk permission management, so this script iterates over a maintained list of report IDs and adds, revokes, audits, or inspects permissions in one shot.
+
+## Why this exists
+
+- The Data Studio UI only lets you share **one report at a time**.
+- The Data Studio REST API exposes per-report permission endpoints but has **no list endpoint**, so report IDs must be maintained manually (see `reports.json`).
+
+See `research-summary.md` for the longer write-up of what was tried and ruled out.
+
+## Setup
+
+### 1. Install dependencies
+
+This project uses [uv](https://github.com/astral-sh/uv).
+
+```bash
+uv sync
+```
+
+### 2. Enable the Data Studio API
+
+In the [Google Cloud Console](https://console.cloud.google.com/):
+
+1. Pick (or create) a project.
+2. **APIs & Services → Library** → search **Data Studio API** → **Enable**.
+
+### 3. Create OAuth credentials
+
+1. **APIs & Services → Credentials → Create Credentials → OAuth client ID**.
+2. Application type: **Desktop app**.
+3. Download the JSON and save it as `credentials.json` in the project root.
+
+### 4. Configure the OAuth consent screen
+
+Under **APIs & Services → OAuth consent screen** (or **Audience** in the redesigned UI):
+
+- If your project is in a Google Workspace org and only you (or your org) needs access, set **User type: Internal**. Refresh tokens never expire and no app verification is required.
+- Otherwise, set User type: External and click **Publish app**. While the app is in *Testing*, refresh tokens expire after **7 days**, which will force a fresh consent flow each week.
+
+Add the scope `https://www.googleapis.com/auth/datastudio` to the consent screen.
+
+### 5. First run
+
+```bash
+uv run permissions.py
+```
+
+A browser window opens for consent. On success, `token.json` is written next to `credentials.json` and reused on subsequent runs. The script will silently refresh expired access tokens; you'll only be prompted again if the refresh token itself becomes invalid (revoked access, 6+ months unused, scope change, or Testing-status expiry).
+
+## Usage
+
+All commands default to the **test reports** list (`test_reports` in `reports.json`). Add `--all-reports` to target the production list.
+
+```bash
+# Print current permissions for every report
+uv run permissions.py
+
+# Add a member as VIEWER (default role)
+uv run permissions.py --add-member alice@example.com
+
+# Add a member as EDITOR
+uv run permissions.py --add-member alice@example.com --role EDITOR
+
+# Revoke all permissions for a member
+uv run permissions.py --revoke-member alice@example.com
+
+# Audit: list reports that are missing a member matching the given email or substring
+uv run permissions.py --check-missing @example.com
+
+# Apply any of the above to the full production list
+uv run permissions.py --add-member alice@example.com --all-reports
+```
+
+### Flags
+
+| Flag | Purpose |
+|---|---|
+| *(none)* | Print current permissions for each report |
+| `--add-member EMAIL` | Add `EMAIL` as a member (role from `--role`) |
+| `--revoke-member EMAIL` | Revoke all permissions for `EMAIL` |
+| `--check-missing EMAIL` | Print reports where no member matches `EMAIL` (substring match — pass `@domain.com` to audit a whole domain) |
+| `--role {VIEWER,EDITOR}` | Role to assign with `--add-member` (default: `VIEWER`) |
+| `--all-reports` | Target the production `reports` list instead of `test_reports` |
+
+## Maintaining `reports.json`
+
+`reports.json` has two top-level keys:
+
+| Key | Targeted when |
+|---|---|
+| `reports` | `--all-reports` is passed |
+| `test_reports` | default (no flag) |
+
+Both map a human-readable name to the report ID. Report IDs come from the URL:
+
+```
+https://datastudio.google.com/reporting/{REPORT_ID}/page/...
+```
+
+Example:
+
+```json
+{
+  "reports": {
+    "Q4 Revenue Dashboard": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  },
+  "test_reports": {
+    "Sandbox": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+  }
+}
+```
+
+To add a report: append an entry under the appropriate key. Use `test_reports` for anything you want to validate against before running with `--all-reports`.
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `permissions.py` | The CLI |
+| `reports.json` | Report ID lists (`reports`, `test_reports`) |
+| `credentials.json` | OAuth client secrets — **do not commit** |
+| `token.json` | Cached user credentials — **do not commit** |
+| `research-summary.md` | Background on why this approach was chosen |
+| `CLAUDE.md` | Project notes for Claude Code |
+
+## Troubleshooting
+
+**`RefreshError` / consent prompt every run.** Your OAuth client is probably still in *Testing* publishing status, which caps refresh tokens at 7 days. Publish the app, or switch to User type: Internal if you have Workspace.
+
+**`403` / API not enabled.** Confirm the Data Studio API is enabled in the same Cloud project your `credentials.json` was created in. The `project_id` field inside `credentials.json` tells you which project that is.
+
+**`404` on a report.** The account that authenticated needs at least view access on the report. The API can only see reports the signed-in user can already see.
