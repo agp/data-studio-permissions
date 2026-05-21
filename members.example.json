@@ -1,0 +1,7 @@
+{
+  "members": [
+    { "email": "alice@example.com", "role": "VIEWER" },
+    { "email": "bob@example.com", "role": "EDITOR" },
+    { "email": "carol@example.com" }
+  ]
+}

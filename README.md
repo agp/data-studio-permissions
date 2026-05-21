@@ -63,6 +63,10 @@ uv run permissions.py --add-member alice@example.com
 # Add a member as EDITOR
 uv run permissions.py --add-member alice@example.com --role EDITOR
 
+# Add many members at once, each with its own role, from a JSON file
+uv run permissions.py --add-members-file            # reads members.json
+uv run permissions.py --add-members-file team.json  # or any path you pass
+
 # Revoke all permissions for a member
 uv run permissions.py --revoke-member alice@example.com
 
@@ -79,6 +83,7 @@ uv run permissions.py --add-member alice@example.com --all-reports
 |---|---|
 | *(none)* | Print current permissions for each report |
 | `--add-member EMAIL` | Add `EMAIL` as a member (role from `--role`) |
+| `--add-members-file [FILE]` | Add every member listed in `FILE` (default: `members.json`), each with its own role |
 | `--revoke-member EMAIL` | Revoke all permissions for `EMAIL` |
 | `--check-missing EMAIL` | Print reports where no member matches `EMAIL` (substring match — pass `@domain.com` to audit a whole domain) |
 | `--role {VIEWER,EDITOR}` | Role to assign with `--add-member` (default: `VIEWER`) |
@@ -114,12 +119,41 @@ Example:
 
 To add a report: append an entry under the appropriate key. Use `test_reports` for anything you want to validate against before running with `--all-reports`.
 
+## Bulk-adding members (`--add-members-file`)
+
+To add several people in one run, list them in a JSON file. Copy `members.example.json` to `members.json` and edit:
+
+```json
+{
+  "members": [
+    { "email": "alice@example.com", "role": "VIEWER" },
+    { "email": "bob@example.com", "role": "EDITOR" },
+    { "email": "carol@example.com" }
+  ]
+}
+```
+
+- `role` is optional per entry and defaults to `VIEWER`; it must be `VIEWER` or `EDITOR`.
+- A bare top-level list (without the `"members"` wrapper) is also accepted.
+- Members are grouped by role, so each report takes one API call per distinct role rather than one per person.
+
+Then run it against the target reports:
+
+```bash
+uv run permissions.py --add-members-file              # reads members.json
+uv run permissions.py --add-members-file team.json    # or a custom path
+uv run permissions.py --add-members-file --all-reports
+```
+
+`members.json` is gitignored (it may contain real addresses); `members.example.json` is the committed template.
+
 ## Files
 
 | File | Purpose |
 |---|---|
 | `permissions.py` | The CLI |
 | `reports.json` | Report ID lists (`reports`, `test_reports`) |
+| `members.example.json` | Template for `--add-members-file` (copy to `members.json`) |
 | `credentials.json` | OAuth client secrets — **do not commit** |
 | `token.json` | Cached user credentials — **do not commit** |
 | `research-summary.md` | Background on why this approach was chosen |

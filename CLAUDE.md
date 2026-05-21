@@ -75,6 +75,22 @@ Both are objects mapping a human-readable report name to its Data Studio report 
 To add a report, append an entry to the appropriate key. Report IDs come from the Data Studio URL:
 `https://datastudio.google.com/reporting/{REPORT_ID}/page/...`
 
+## Members File (`--add-members-file`)
+
+`--add-members-file [FILE]` bulk-adds members from a JSON file (default `members.json`). The file is either a `{"members": [...]}` object or a bare list of entries; each entry is `{"email": ..., "role": ...}` where `role` is optional and defaults to `VIEWER` (must be `VIEWER` or `EDITOR`). Example:
+
+```json
+{
+  "members": [
+    { "email": "alice@example.com", "role": "VIEWER" },
+    { "email": "bob@example.com", "role": "EDITOR" },
+    { "email": "carol@example.com" }
+  ]
+}
+```
+
+`load_members()` groups emails by role so each report takes one `addMembers` API call per distinct role rather than one per person. It runs before authentication, so a malformed file fails fast without triggering the OAuth flow. `members.json` is gitignored (may contain real addresses); `members.example.json` is the committed template.
+
 ## Known Constraints
 
 1. No list endpoint — report IDs must be hardcoded or maintained in a separate source (e.g. a CSV or Google Sheet)
