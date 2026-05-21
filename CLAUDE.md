@@ -83,9 +83,9 @@ To add a report, append an entry to the appropriate key. Report IDs come from th
 |---|---|
 | *(none)* | `test_reports` only |
 | `--all-reports` | full `reports` list |
-| `--report NAME_OR_ID` | a single report resolved from `reports.json` by name or ID |
+| `--report NAME_OR_ID` | a single report resolved from `reports.json` by name or ID, or a raw report UUID not in the file |
 
-`--report` and `--all-reports` are mutually exclusive. `resolve_report()` searches both `reports` and `test_reports` and exits with an error if the value matches neither a name nor an ID — it does not accept arbitrary IDs absent from the file.
+`--report` and `--all-reports` are mutually exclusive. `resolve_report()` searches both `reports` and `test_reports`; if the value matches neither a name nor an ID, it is accepted as a raw report ID only when it is a well-formed UUID (matches `UUID_RE`), otherwise it exits with an error.
 
 ## Members File (`--add-members-file`)
 

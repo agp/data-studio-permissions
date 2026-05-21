@@ -75,6 +75,7 @@ uv run permissions.py --check-missing @example.com
 
 # Target a single report by name or ID (from reports.json) instead of the whole list
 uv run permissions.py --add-member alice@example.com --report "Q4 Revenue Dashboard"
+# ...or a full report UUID that isn't in reports.json
 uv run permissions.py --report xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 # Apply any of the above to the full production list
@@ -91,7 +92,7 @@ uv run permissions.py --add-member alice@example.com --all-reports
 | `--revoke-member EMAIL` | Revoke all permissions for `EMAIL` |
 | `--check-missing EMAIL` | Print reports where no member matches `EMAIL` (substring match — pass `@domain.com` to audit a whole domain) |
 | `--role {VIEWER,EDITOR}` | Role to assign with `--add-member` (default: `VIEWER`) |
-| `--report REPORT` | Target a single report by name or ID from `reports.json` (mutually exclusive with `--all-reports`) |
+| `--report REPORT` | Target a single report by name or ID from `reports.json`, or a full report UUID not in the file (mutually exclusive with `--all-reports`) |
 | `--all-reports` | Target the production `reports` list instead of `test_reports` |
 
 ## Maintaining `reports.json`

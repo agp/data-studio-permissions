@@ -8,7 +8,7 @@ Setup:
   uv run permissions.py --add-members-file [FILE]  # add every member listed in FILE (default: members.json)
   uv run permissions.py --revoke-member EMAIL    # revoke all permissions for the given member
   uv run permissions.py --check-missing          # print only reports missing given member or part of member email
-  uv run permissions.py --report NAME_OR_ID      # target a single report by name or ID from reports.json
+  uv run permissions.py --report NAME_OR_ID      # target a single report by name/ID from reports.json, or a raw report UUID
   uv run permissions.py --all-reports            # run against the full reports list (default is the test report only)
   uv run permissions.py --role ROLE              # role to assign with --add-member (default: VIEWER)
   
@@ -24,6 +24,7 @@ Report IDs are the alphanumeric string in the Data Studio URL:
 import argparse
 import json
 import os
+import re
 
 import requests
 from google.auth.exceptions import RefreshError
@@ -40,6 +41,7 @@ with open("reports.json") as _f:
     TEST_REPORTS = _data["test_reports"]  # name -> id
 
 ROLES = ("VIEWER", "EDITOR")
+UUID_RE = re.compile(r"^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$")
 
 
 def get_credentials() -> Credentials:
@@ -150,7 +152,9 @@ def resolve_report(value: str) -> tuple[str, str]:
     """Resolve a --report argument to (name, id).
 
     Matches a report name or ID in either reports.json collection (reports or
-    test_reports). Exits with an error if the value is in neither.
+    test_reports). Falls back to treating the value as a raw report ID when it
+    is a well-formed report UUID absent from the file; exits with an error
+    otherwise.
     """
     for collection in (REPORTS, TEST_REPORTS):
         if value in collection:
@@ -158,7 +162,11 @@ def resolve_report(value: str) -> tuple[str, str]:
         for name, report_id in collection.items():
             if report_id == value:
                 return name, report_id
-    raise SystemExit(f"Report {value!r} not found in reports.json (by name or ID)")
+    if UUID_RE.match(value):
+        return value, value
+    raise SystemExit(
+        f"Report {value!r} not found in reports.json — pass a name or ID from the file, or a full report UUID"
+    )
 
 
 def main():
@@ -176,7 +184,7 @@ def main():
     group.add_argument("--check-missing", metavar="EMAIL", help="Print only reports missing a member with the given email or email domain")
     parser.add_argument("--role", choices=ROLES, default="VIEWER", help="Role to assign with --add-member (default: VIEWER)")
     scope = parser.add_mutually_exclusive_group()
-    scope.add_argument("--report", metavar="REPORT", help="Target a single report by name or ID from reports.json")
+    scope.add_argument("--report", metavar="REPORT", help="Target a single report by name or ID from reports.json, or a full report UUID not in the file")
     scope.add_argument("--all-reports", action="store_true", help="Run against the full reports list (default: test report only)")
     args = parser.parse_args()
 
