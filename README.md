@@ -51,7 +51,7 @@ A browser window opens for consent. On success, `token.json` is written next to 
 
 ## Usage
 
-All commands default to the **test reports** list (`test_reports` in `reports.json`). Add `--all-reports` to target the production list.
+All commands default to the **test reports** list (`test_reports` in `reports.json`). Add `--all-reports` to target the production list, or `--report NAME_OR_ID` to target just one report from `reports.json`.
 
 ```bash
 # Print current permissions for every report
@@ -73,6 +73,10 @@ uv run permissions.py --revoke-member alice@example.com
 # Audit: list reports that are missing a member matching the given email or substring
 uv run permissions.py --check-missing @example.com
 
+# Target a single report by name or ID (from reports.json) instead of the whole list
+uv run permissions.py --add-member alice@example.com --report Telhio
+uv run permissions.py --report c72253ba-4d78-49c4-be2f-c1ce740673cf
+
 # Apply any of the above to the full production list
 uv run permissions.py --add-member alice@example.com --all-reports
 ```
@@ -87,6 +91,7 @@ uv run permissions.py --add-member alice@example.com --all-reports
 | `--revoke-member EMAIL` | Revoke all permissions for `EMAIL` |
 | `--check-missing EMAIL` | Print reports where no member matches `EMAIL` (substring match — pass `@domain.com` to audit a whole domain) |
 | `--role {VIEWER,EDITOR}` | Role to assign with `--add-member` (default: `VIEWER`) |
+| `--report REPORT` | Target a single report by name or ID from `reports.json` (mutually exclusive with `--all-reports`) |
 | `--all-reports` | Target the production `reports` list instead of `test_reports` |
 
 ## Maintaining `reports.json`

@@ -8,6 +8,7 @@ Setup:
   uv run permissions.py --add-members-file [FILE]  # add every member listed in FILE (default: members.json)
   uv run permissions.py --revoke-member EMAIL    # revoke all permissions for the given member
   uv run permissions.py --check-missing          # print only reports missing given member or part of member email
+  uv run permissions.py --report NAME_OR_ID      # target a single report by name or ID from reports.json
   uv run permissions.py --all-reports            # run against the full reports list (default is the test report only)
   uv run permissions.py --role ROLE              # role to assign with --add-member (default: VIEWER)
   
@@ -145,6 +146,21 @@ def check_missing_member(session: requests.Session, report_name: str, report_id:
         print(f"MISSING {domain}: {report_name} ({report_id})")
 
 
+def resolve_report(value: str) -> tuple[str, str]:
+    """Resolve a --report argument to (name, id).
+
+    Matches a report name or ID in either reports.json collection (reports or
+    test_reports). Exits with an error if the value is in neither.
+    """
+    for collection in (REPORTS, TEST_REPORTS):
+        if value in collection:
+            return value, collection[value]
+        for name, report_id in collection.items():
+            if report_id == value:
+                return name, report_id
+    raise SystemExit(f"Report {value!r} not found in reports.json (by name or ID)")
+
+
 def main():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
@@ -159,7 +175,9 @@ def main():
     group.add_argument("--revoke-member", metavar="EMAIL", help="Revoke all permissions for the given email")
     group.add_argument("--check-missing", metavar="EMAIL", help="Print only reports missing a member with the given email or email domain")
     parser.add_argument("--role", choices=ROLES, default="VIEWER", help="Role to assign with --add-member (default: VIEWER)")
-    parser.add_argument("--all-reports", action="store_true", help="Run against the full reports list (default: test report only)")
+    scope = parser.add_mutually_exclusive_group()
+    scope.add_argument("--report", metavar="REPORT", help="Target a single report by name or ID from reports.json")
+    scope.add_argument("--all-reports", action="store_true", help="Run against the full reports list (default: test report only)")
     args = parser.parse_args()
 
     members_by_role = load_members(args.add_members_file) if args.add_members_file else None
@@ -168,7 +186,11 @@ def main():
     session = requests.Session()
     session.headers.update({"Authorization": f"Bearer {creds.token}"})
 
-    reports = REPORTS if args.all_reports else TEST_REPORTS
+    if args.report:
+        name, report_id = resolve_report(args.report)
+        reports = {name: report_id}
+    else:
+        reports = REPORTS if args.all_reports else TEST_REPORTS
     for report_name, report_id in reports.items():
         if args.add_member:
             add_member(session, report_id, args.add_member, args.role)

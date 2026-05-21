@@ -75,6 +75,16 @@ Both are objects mapping a human-readable report name to its Data Studio report 
 To add a report, append an entry to the appropriate key. Report IDs come from the Data Studio URL:
 `https://datastudio.google.com/reporting/{REPORT_ID}/page/...`
 
+### Report scope flags
+
+| Flag | Scope |
+|---|---|
+| *(none)* | `test_reports` only |
+| `--all-reports` | full `reports` list |
+| `--report NAME_OR_ID` | a single report resolved from `reports.json` by name or ID |
+
+`--report` and `--all-reports` are mutually exclusive. `resolve_report()` searches both `reports` and `test_reports` and exits with an error if the value matches neither a name nor an ID — it does not accept arbitrary IDs absent from the file.
+
 ## Members File (`--add-members-file`)
 
 `--add-members-file [FILE]` bulk-adds members from a JSON file (default `members.json`). The file is either a `{"members": [...]}` object or a bare list of entries; each entry is `{"email": ..., "role": ...}` where `role` is optional and defaults to `VIEWER` (must be `VIEWER` or `EDITOR`). Example:
