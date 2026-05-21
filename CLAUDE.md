@@ -75,6 +75,8 @@ Both are objects mapping a human-readable report name to its Data Studio report 
 To add a report, append an entry to the appropriate key. Report IDs come from the Data Studio URL:
 `https://datastudio.google.com/reporting/{REPORT_ID}/page/...`
 
+`reports.json` is gitignored (real report names/IDs); `reports.example.json` is the committed template (`cp reports.example.json reports.json`).
+
 ### Report scope flags
 
 | Flag | Scope |

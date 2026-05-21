@@ -74,8 +74,8 @@ uv run permissions.py --revoke-member alice@example.com
 uv run permissions.py --check-missing @example.com
 
 # Target a single report by name or ID (from reports.json) instead of the whole list
-uv run permissions.py --add-member alice@example.com --report Telhio
-uv run permissions.py --report c72253ba-4d78-49c4-be2f-c1ce740673cf
+uv run permissions.py --add-member alice@example.com --report "Q4 Revenue Dashboard"
+uv run permissions.py --report xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 # Apply any of the above to the full production list
 uv run permissions.py --add-member alice@example.com --all-reports
@@ -95,6 +95,12 @@ uv run permissions.py --add-member alice@example.com --all-reports
 | `--all-reports` | Target the production `reports` list instead of `test_reports` |
 
 ## Maintaining `reports.json`
+
+`reports.json` is gitignored (it holds your real report names and IDs). Copy the committed template to create it:
+
+```bash
+cp reports.example.json reports.json
+```
 
 `reports.json` has two top-level keys:
 
@@ -157,7 +163,8 @@ uv run permissions.py --add-members-file --all-reports
 | File | Purpose |
 |---|---|
 | `permissions.py` | The CLI |
-| `reports.json` | Report ID lists (`reports`, `test_reports`) |
+| `reports.json` | Report ID lists (`reports`, `test_reports`) — **gitignored** |
+| `reports.example.json` | Template for `reports.json` (copy and fill in your report IDs) |
 | `members.example.json` | Template for `--add-members-file` (copy to `members.json`) |
 | `credentials.json` | OAuth client secrets — **do not commit** |
 | `token.json` | Cached user credentials — **do not commit** |
